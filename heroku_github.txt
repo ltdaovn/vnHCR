@@ -1,0 +1,6 @@
+$ heroku login -i
+$ git init
+$ heroku git:remote -a vnhcr
+$ git add .
+$ git commit -am "deploy my app"
+$ git push heroku master
