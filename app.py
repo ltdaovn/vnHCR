@@ -59,31 +59,15 @@ def respond():
 
     # Return the response in json format
     return jsonify(response)
-	
-
-#http://localhost:5000/prediction?url=http://trolyao.cusc.vn/image/m.jpg
 
 
-#@app.route('/prediction')
-@app.route('/prediction', methods=['GET'])
-def predition():
-	#url = 'http://trolyao.cusc.vn/image/m.jpg'
-	url = ''
-	if request.method=='GET':
-		url = request.args.get("url", None)
-	
-	#img = cv2.imread('1.jpg', cv2.IMREAD_COLOR) # đọc ảnh
-	#img = url_to_image("http://trolyao.cusc.vn/image/m.jpg");
-	#img = url_to_image("http://trolyao.cusc.vn/image/i.jpg");
-	#img = url_to_image("http://trolyao.cusc.vn/image/g.jpg");
-	img = url_to_image(url);
+def detect(img):
 	img_data = cv2.resize(img, (128, 128), interpolation=cv2.INTER_AREA)  # chuyển kích thước ảnh về 128x128
 	thresh_1 = 150 # ngưỡng đặc trưng của ảnh, dươi ngưỡng pixel có màu đen và ngược lại là màu trắng.
 	img_agray = cv2.threshold(img_data, thresh_1, maxval=255, type=cv2.THRESH_BINARY_INV)[1]
 	thresh_2 = 128
 	(thresh, img_bin) = cv2.threshold(img_agray, thresh_2, 255, cv2.THRESH_BINARY, cv2.THRESH_OTSU)
 	img_color = cv2.cvtColor(img_bin, 1)
-	
 	
 	
 	with CustomObjectScope({'relu6': keras.layers.ReLU(6.), 'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
@@ -112,12 +96,29 @@ def predition():
 	# lấy phần tử có giá trị lớn nhất
 	predict_img = np.argmax(prediction, axis=-1)
 
-	# in ra kết quả dự đoán
-	#return("A")
-	#return(names.get(predict_img[0]))
-	#return render_template('result.html',results=names.get(predict_img[0]))
-	#return render_template('result.html',results='A')
-	return jsonify(names.get(predict_img[0]))
+	return(names.get(predict_img[0]))
+	
+
+	
+
+#http://localhost:5000/prediction?url=http://trolyao.cusc.vn/image/m.jpg
+
+
+#@app.route('/prediction')
+@app.route('/prediction', methods=['GET'])
+def predition():
+	#url = 'http://trolyao.cusc.vn/image/m.jpg'
+	url = ''
+	if request.method=='GET':
+		url = request.args.get("url", None)
+	
+	#img = cv2.imread('1.jpg', cv2.IMREAD_COLOR) # đọc ảnh
+	#img = url_to_image("http://trolyao.cusc.vn/image/m.jpg");
+	#img = url_to_image("http://trolyao.cusc.vn/image/i.jpg");
+	#img = url_to_image("http://trolyao.cusc.vn/image/g.jpg");
+	img = url_to_image(url);
+	
+	return jsonify(detect(img))
 	#return jsonify(keras.__version__)
 
 @app.route('/upload', methods=['POST'])
@@ -129,32 +130,9 @@ def upload_file():
     #file.save(filename)
 
     # Read image
-    image = cv2.imdecode(np.fromstring(file.read(), np.uint8), cv2.IMREAD_UNCHANGED)
+    img = cv2.imdecode(np.fromstring(file.read(), np.uint8), cv2.IMREAD_UNCHANGED)
     
-    # Detect faces
-    faces = detect_faces(image)
-
-    if len(faces) == 0:
-        faceDetected = False
-        num_faces = 0
-        to_send = ''
-    else:
-        faceDetected = True
-        num_faces = len(faces)
-        
-        # Draw a rectangle
-        for item in faces:
-            draw_rectangle(image, item['rect'])
-        
-        # Save
-        #cv2.imwrite(filename, image)
-        
-        # In memory
-        image_content = cv2.imencode('.jpg', image)[1].tostring()
-        encoded_image = base64.encodestring(image_content)
-        to_send = 'data:image/jpg;base64, ' + str(encoded_image, 'utf-8')
-
-    return render_template('index.html', faceDetected=faceDetected, num_faces=num_faces, image_to_show=to_send, init=True)
+    return render_template('result.html', results=detect(img))
 
 	
 if __name__ == '__main__':
