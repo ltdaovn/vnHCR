@@ -65,13 +65,10 @@ def respond():
 
 
 #@app.route('/prediction')
-@app.route('/prediction', methods=['POST','GET'])
+@app.route('/prediction', methods=['GET'])
 def predition():
 	#url = 'http://trolyao.cusc.vn/image/m.jpg'
 	url = ''
-	
-	if request.method=='POST':
-		url = request.form['url'];
 	if request.method=='GET':
 		url = request.args.get("url", None)
 	
@@ -122,7 +119,44 @@ def predition():
 	#return render_template('result.html',results='A')
 	return jsonify(names.get(predict_img[0]))
 	#return jsonify(keras.__version__)
-		
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    file = request.files['image']
+
+    # Save file
+    #filename = 'static/' + file.filename
+    #file.save(filename)
+
+    # Read image
+    image = cv2.imdecode(np.fromstring(file.read(), np.uint8), cv2.IMREAD_UNCHANGED)
+    
+    # Detect faces
+    faces = detect_faces(image)
+
+    if len(faces) == 0:
+        faceDetected = False
+        num_faces = 0
+        to_send = ''
+    else:
+        faceDetected = True
+        num_faces = len(faces)
+        
+        # Draw a rectangle
+        for item in faces:
+            draw_rectangle(image, item['rect'])
+        
+        # Save
+        #cv2.imwrite(filename, image)
+        
+        # In memory
+        image_content = cv2.imencode('.jpg', image)[1].tostring()
+        encoded_image = base64.encodestring(image_content)
+        to_send = 'data:image/jpg;base64, ' + str(encoded_image, 'utf-8')
+
+    return render_template('index.html', faceDetected=faceDetected, num_faces=num_faces, image_to_show=to_send, init=True)
+
+	
 if __name__ == '__main__':
 	#app.run()
 	app.run(threaded=False)
